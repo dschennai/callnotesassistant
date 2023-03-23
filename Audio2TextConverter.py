@@ -108,7 +108,7 @@ def save_audio_files_to_folder(audiofile):
             save_path = Path("audio") / audiofile.name
             audio.export(save_path, format=file_type)
             filename_returned = audiofile.name
-        elif audiofile.name.endswith('mp3') or audiofile.name.endswith('mpga') or audiofile.name.endswith('m4a'):
+        elif audiofile.name.endswith('mp3') or audiofile.name.endswith('mpga'):
             file_name_without_extension = os.path.splitext(audiofile.name)[0]
             file_name_without_extension = file_name_without_extension + ".wav"
             audio = pydub.AudioSegment.from_mp3(audiofile)
@@ -138,6 +138,13 @@ def save_audio_files_to_folder(audiofile):
             file_name_without_extension = file_name_without_extension + ".wav"
 
             audio = AudioSegment.from_file(audiofile, format="ogg")
+            audiofile = audio.export("audio/" + file_name_without_extension, format="wav")
+            filename_returned = file_name_without_extension
+        elif audiofile.name.endswith('m4a'):
+            file_name_without_extension = os.path.splitext(audiofile.name)[0]
+            file_name_without_extension = file_name_without_extension + ".wav"
+
+            audio = AudioSegment.from_file(audiofile, format="m4a")
             audiofile = audio.export("audio/" + file_name_without_extension, format="wav")
             filename_returned = file_name_without_extension
     print(filename_returned)
