@@ -12,6 +12,11 @@ import streamlit as st
 from nltk.tokenize import word_tokenize
 from pydub import AudioSegment
 from pydub.utils import make_chunks
+import subprocess
+
+# install ffmpeg and ffprobe using apt-get
+subprocess.call(['apt-get', 'update'])
+subprocess.call(['apt-get', 'install', '-y', 'ffmpeg'])
 
 # Add your key and endpoint
 openai.api_key=st.secrets["ds_org_key"]
