@@ -13,6 +13,7 @@ from nltk.tokenize import word_tokenize
 from pydub import AudioSegment
 from pydub.utils import make_chunks
 import subprocess
+import ffmpeg
 
 # install ffmpeg and ffprobe using apt-get
 subprocess.call(['apt-get', 'update'])
