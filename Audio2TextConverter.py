@@ -194,7 +194,6 @@ def usewhisperapi(filename):
 
 def openai_translate_output_text_english(file_name_alone):
     # append the folder name "audio"
-    openai.api_key = "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"
     model_id = 'whisper-1'
 
     # media_file = open("audio/" + file_name_alone, 'rb')
