@@ -1,5 +1,4 @@
 openai
 pydub
 nltk
-ffmpeg
-ffprobe
+ffmpeg-python
