@@ -13,6 +13,7 @@ from nltk.tokenize import word_tokenize
 from pydub import AudioSegment
 from pydub.utils import make_chunks
 import subprocess
+
 # install ffmpeg and ffprobe using apt-get
 subprocess.call(['apt-get', 'update'])
 subprocess.call(['apt-get', 'install', '-y', 'ffmpeg'])
@@ -22,6 +23,7 @@ openai.api_key=st.secrets["ds_org_key"]
 discord_webhook = st.secrets["discord_webhook"]
 azure_translator_key = st.secrets["azure_translator_key"]
 endpoint = "https://api.cognitive.microsofttranslator.com/translate"
+
 nltk.download('punkt')
 
 st.set_page_config(
