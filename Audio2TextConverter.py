@@ -9,6 +9,7 @@ import pandas as pd
 import pydub
 import requests
 import streamlit as st
+import nltk
 from nltk.tokenize import word_tokenize
 from pydub import AudioSegment
 from pydub.utils import make_chunks
