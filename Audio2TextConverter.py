@@ -21,7 +21,7 @@ endpoint = "https://api.cognitive.microsofttranslator.com/translate"
 
 
 st.set_page_config(
-    page_title="DigitalSEO Audio Transcribe",
+    page_title="Audio Transcripts",
     page_icon="Logo_with_trademark.png",
     layout="wide"
 )
@@ -104,7 +104,7 @@ def save_audio_files_to_folder(audiofile):
             save_path = Path("audio") / audiofile.name
             audio.export(save_path, format=file_type)
             filename_returned = audiofile.name
-        elif audiofile.name.endswith('mp3') or audiofile.name.endswith('mpga'):
+        elif audiofile.name.endswith('mp3') or audiofile.name.endswith('mpga')or audiofile.name.endswith('m4a'):
             file_name_without_extension = os.path.splitext(audiofile.name)[0]
             file_name_without_extension = file_name_without_extension + ".wav"
             audio = pydub.AudioSegment.from_mp3(audiofile)
@@ -136,9 +136,8 @@ def save_audio_files_to_folder(audiofile):
             audio = AudioSegment.from_file(audiofile, format="ogg")
             audiofile = audio.export("audio/" + file_name_without_extension, format="wav")
             filename_returned = file_name_without_extension
-    print("--------")
     print(filename_returned)
-    print("---------")
+
     return filename_returned, audio
 
 
@@ -367,6 +366,7 @@ Preserve natural speech: Although the goal is to create a polished transcript, i
     return response["choices"][0]["message"]['content'].strip()
 
 def get_meeting_mintues_gpt35turbo(call_detail):
+    print("starting..")
     filename = "callnotes.txt"
     prompt_response = []
 
@@ -402,7 +402,7 @@ def get_meeting_mintues_gpt35turbo(call_detail):
         presence_penalty=0
     )
     meeting_summary = response["choices"][0]["message"]['content'].strip()
-
+    print(meeting_summary)
     return str(prompt_response), meeting_summary
 
 def split_audio_files_by_size(audio_data, audiof_filename):
@@ -451,25 +451,28 @@ def startprocessing():
             #outputtext = outputtext + transcribe_audio(audiosegs)+ "\n\n"
             outputtextinenglish = outputtextinenglish + openai_translate_output_text_english(audiosegs)+"\n\n"
 
-        azuretranslatedtext_tamil = translate_eng_tamil(outputtextinenglish)
         if sel_lang == "Tamil":
-            azuretranslatedtext_mixtamil = translate_eng_tamil(outputtext)
+            azuretranslatedtext_mixtamil = translate_eng_tamil(outputtextinenglish)
         else:
-            azuretranslatedtext_tamil = "Not Translated : As per User Input"
+            azuretranslatedtext_mixtamil = "Not Translated : As per User Input"
 
-        transcribetab, translatetab, azuretamil = st.tabs(["Original Transcipt", "English Version", "Tamil Version"])
-        with transcribetab:
-            st.text_area("ssa", outputtext, label_visibility="collapsed")
-            st.download_button(label="Download Text", data=outputtext,
-                               file_name=save_audio_file_name + ".txt", mime="text/plain")
+        translatetab, azuretamil = st.tabs(["English Version", "Tamil Version"])
+        #with transcribetab:
+        #    st.text_area("ssa", outputtext, label_visibility="collapsed")
+        #    st.download_button(label="Download Text", data=outputtext,
+        #                       file_name=save_audio_file_name + ".txt", mime="text/plain")
         with translatetab:
-            st.text_area("sa", outputtextinenglish ,label_visibility="collapsed")
             st.download_button(label="Download", data=outputtextinenglish,
                                file_name=save_audio_file_name + ".txt", mime="text/plain")
+            st.text_area("sa", outputtextinenglish ,label_visibility="collapsed", height=250)
+
         with azuretamil:
-            st.text_area("sad", azuretranslatedtext_tamil, label_visibility="collapsed")
-            st.download_button(label="Download", data=azuretranslatedtext_tamil,
+            if azuretranslatedtext_mixtamil == 'Not Translated : As per User Input':
+                st.text_area("sad", azuretranslatedtext_mixtamil, label_visibility="collapsed", height=250)
+            else:
+                st.download_button(label="Download", data=azuretranslatedtext_tamil,
                                file_name=save_audio_file_name + ".txt", mime="text/plain")
+                st.text_area("sad", azuretranslatedtext_mixtamil, label_visibility="collapsed", height=250)
 
         # Following stores output in txt file
         with open(getuniquefilename() + "_transcribedoutput.txt", "w") as f:
@@ -513,7 +516,7 @@ with tab1:
 
             cols[0].write("Upload your Audio File ( Files larger than 10MB take more processing time)")
             uploaded_file = cols[0].file_uploader("Upload Recording",
-                                                  type=['wav', 'mp3', 'aac', 'ogg', 'mpga', 'mp4'],
+                                                  type=['wav', 'mp3', 'aac', 'ogg', 'mpga', 'mp4','m4a'],
                                                   accept_multiple_files=False, key="u1", label_visibility="collapsed")
             if uploaded_file is not None:
                 with st.spinner('Wait for it...'):
@@ -589,26 +592,26 @@ with tab3:
     #finetune = cols[1].radio("tune", ["Da Vinci 003", "GPT 3.5"], index=1, horizontal=True,
     #                         label_visibility="collapsed")
     st.write("Add your Call Notes")
-    callnotes = st.text_area("tab2_call", "", label_visibility="collapsed")
+    callnotes = st.text_area("tab2_call", "", label_visibility="collapsed", height=100)
 
-    if st.button("Get Meeting Minutes with Action Items") and len(call_detail) > 0:
+    if st.button("Get Meeting Minutes with Action Items") and len(callnotes) > 0:
         file = open("callnotes.txt", "w")
         file.write(callnotes)
         file.close()
 
         #if finetune == "GPT 3.5":
         st.write("")
-        plain_response, meeting_summary = get_meeting_mintues_gpt35turbo(call_detail)
+        plain_response, meeting_summary = get_meeting_mintues_gpt35turbo(callnotes)
         actionitem_response, consolidated_actionitem = get_action_items_gpt35turbo()
-        t1, t2, t3, t4 = st.tabs(["Summary", "Consolidated", "Action Item", "Consolidated"])
-        with t1:
-            st.write(plain_response)
+        t2, t4 = st.tabs(["Meeting summary", "Consolidated Action Items"])
+        #with t1:
+        #    st.write(plain_response)
         with t2:
-            st.write(meeting_summary)
-        with t3:
-            st.write(actionitem_response)
+            st.text_area("meeting_summary",meeting_summary, label_visibility="collapsed", height=250)
+        #with t3:
+        #    st.write(actionitem_response)
         with t4:
-            st.write(consolidated_actionitem)
+            st.text_area("consolidated_actionitem", consolidated_actionitem, label_visibility="collapsed", height=250)
 
 with tab2:
     st.write("Add your Call Notes")
