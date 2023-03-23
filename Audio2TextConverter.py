@@ -22,7 +22,7 @@ openai.api_key=st.secrets["ds_org_key"]
 discord_webhook = st.secrets["discord_webhook"]
 azure_translator_key = st.secrets["azure_translator_key"]
 endpoint = "https://api.cognitive.microsofttranslator.com/translate"
-
+nltk.download('punkt')
 
 st.set_page_config(
     page_title="Audio Transcripts",
