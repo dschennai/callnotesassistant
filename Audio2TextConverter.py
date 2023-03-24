@@ -484,8 +484,8 @@ def startprocessing():
             if azuretranslatedtext_mixtamil == 'Not Translated : As per User Input':
                 st.text_area("sad", azuretranslatedtext_mixtamil, label_visibility="collapsed", height=250)
             else:
-                st.download_button(label="Download", data=azuretranslatedtext_tamil,
-                               file_name=save_audio_file_name + ".txt", mime="text/plain")
+                #st.download_button(label="Download", data=azuretranslatedtext_tamil,
+                #               file_name=save_audio_file_name + ".txt", mime="text/plain")
                 st.text_area("sad", azuretranslatedtext_mixtamil, label_visibility="collapsed", height=250)
 
         # Following stores output in txt file
