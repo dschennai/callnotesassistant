@@ -1,4 +1,5 @@
-```graph TD
+```mermaid
+graph TD
     A[User Logs In] --> B{Project Dashboard};
     B --> C[Start New Project];
     B --> D[Resume Existing Project];
@@ -47,6 +48,6 @@
     O --> V["Request Rebrief"];
 
     U --> W((System: Upload to GCS & Set Status to Complete));
-    W --> B;```
+    W --> B;
 
     V -- Submit Feedback --> P;
