@@ -54,15 +54,15 @@ flowchart TD
 
     %% Notes
     note right of AI1
-        LLM Tasks Include:
-        - Creative Brief Distillation
-        - Persona Suggestion
-        - Goal Setting
-        - Moodboard Generation
-        - Prompt Guide Compilation
-        - Parameter Proposal and Chat
-        - Final Image Prompt Synthesis
-    end
+        LLM Tasks Include
+        * Creative Brief Distillation
+        * Persona Suggestion
+        * Goal Setting
+        * Moodboard Generation
+        * Prompt Guide Compilation
+        * Parameter Proposal and Chat
+        * Final Image Prompt Synthesis
+    end note
 
     classDef layer fill:#eef6ff,stroke:#6fa8dc,stroke-width:1px,corner-radius:8px;
     classDef ai fill:#fff0f5,stroke:#d46a6a,stroke-width:1px,corner-radius:8px;
