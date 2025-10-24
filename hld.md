@@ -1,5 +1,9 @@
 ```mermaid
-flowchart TD    
+flowchart TD
+    %% =========================
+    %% HLD: High-Level Design Framework (GitHub-Compatible v2)
+    %% =========================
+
     subgraph U["User - Creative Team Member"]
         UI1[Project Dashboard]
         UI2[Creative Brief Review]
