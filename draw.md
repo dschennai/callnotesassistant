@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     %% Title
     A[Start: Client Request Received] --> B[Phase 1: Project Kick-Off & Information Gathering]
