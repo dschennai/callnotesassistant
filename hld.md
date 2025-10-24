@@ -1,21 +1,20 @@
-```mermaid
 flowchart TD
     %% =========================
-    %% HLD: High-Level Design Framework (GitHub-Compatible)
+    %% HLD: High-Level Design Framework (GitHub-Compatible v2)
     %% =========================
 
     subgraph U["User - Creative Team Member"]
         UI1[Project Dashboard]
         UI2[Creative Brief Review]
         UI3[Persona Selection]
-        UI4[Optional Creative Hub]
+        UI4[Creative Hub - Optional]
         UI5[Parameter Review and Refinement]
         UI6[Final Asset Review]
     end
 
-    subgraph F["Frontend - Next.js 15+, React 19"]
+    subgraph F["Frontend - Next.js 15 and React 19"]
         F1[Server Components and Actions]
-        F2[Redux Toolkit + Tailwind UI]
+        F2[Redux Toolkit and Tailwind UI]
         F3[MUI, React Select, Dropzone]
     end
 
@@ -28,28 +27,28 @@ flowchart TD
 
     subgraph D["Data and Storage Layer"]
         D1[Firestore - Project Data Store]
-        D2[Redis - Temp Chat Session Store]
-        D3[GCS - Asset Storage]
+        D2[Redis - Temporary Chat Session Store]
+        D3[Google Cloud Storage - Asset Repository]
     end
 
     subgraph AI["AI and Generative Services"]
-        AI1[LLM - Text Tasks (Briefs, Personas, Prompts)]
-        AI2[Image Generator - Visual Assets]
+        AI1[LLM for Text Tasks such as Briefs, Personas, and Prompts]
+        AI2[Image Generator for Visual Assets]
     end
 
     %% User ↔ Frontend
-    U -->|UI Interactions| F
+    U -->|User Interactions| F
     F -->|Server Actions or API Calls| B
 
     %% Backend ↔ Data
-    B -->|Read or Write| D1
+    B -->|Read or Write Data| D1
     B -->|Cache Sessions| D2
     B -->|Upload or Fetch Assets| D3
 
     %% Backend ↔ AI
     B -->|Prompt Requests| AI1
-    AI1 -->|Generated Briefs, Personas, Prompts| B
-    B -->|Final Image Prompt| AI2
+    AI1 -->|Generated Briefs and Prompts| B
+    B -->|Image Prompt| AI2
     AI2 -->|Generated Image| B
 
     %% Data ↔ Frontend
