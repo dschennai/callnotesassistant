@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface WordCountResult {
   id: string;
+  title: string;
   text: string;
   word_count: number;
   character_count: number;
@@ -22,6 +23,7 @@ interface WordCountStats {
 }
 
 export default function WordCounter() {
+  const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [stats, setStats] = useState<WordCountStats>({
     word_count: 0,
@@ -34,6 +36,12 @@ export default function WordCounter() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchIn, setSearchIn] = useState<'both' | 'title' | 'content'>('both');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<WordCountResult[] | null>(null);
 
   // Calculate stats locally for real-time updates
   useEffect(() => {
@@ -86,13 +94,19 @@ export default function WordCounter() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, title: title.trim() || undefined }),
       });
 
       if (response.ok) {
         const result = await response.json();
         setHistory(prev => [result, ...prev]);
         setText('');
+        setTitle('');
+        // Clear search if active
+        if (searchResults) {
+          setSearchResults(null);
+          setSearchQuery('');
+        }
       } else {
         setError('Failed to save. Please try again.');
       }
@@ -110,6 +124,9 @@ export default function WordCounter() {
       });
       if (response.ok) {
         setHistory(prev => prev.filter(item => item.id !== id));
+        if (searchResults) {
+          setSearchResults(prev => prev?.filter(item => item.id !== id) || null);
+        }
       }
     } catch (err) {
       console.error('Failed to delete:', err);
@@ -117,14 +134,72 @@ export default function WordCounter() {
   };
 
   const loadFromHistory = (item: WordCountResult) => {
+    setTitle(item.title);
     setText(item.text);
   };
+
+  // Search functionality
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const params = new URLSearchParams({
+        q: searchQuery.trim(),
+        search_in: searchIn,
+      });
+      const response = await fetch(`/api/word-count/search?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data);
+      }
+    } catch (err) {
+      console.error('Search failed:', err);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery, searchIn]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        handleSearch();
+      } else {
+        setSearchResults(null);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchIn, handleSearch]);
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults(null);
+  };
+
+  // Display either search results or history
+  const displayedEntries = searchResults !== null ? searchResults : history;
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
         Word Counter Tool
       </h1>
+
+      {/* Title Input */}
+      <div className="mb-4">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Enter a title for your entry (optional)"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+        />
+      </div>
 
       {/* Text Input Area */}
       <div className="mb-6">
@@ -179,30 +254,74 @@ export default function WordCounter() {
 
       {/* History Section */}
       <div className="border-t pt-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">History</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">
+            {searchResults !== null ? 'Search Results' : 'History'}
+          </h2>
+          {searchResults !== null && (
+            <button
+              onClick={clearSearch}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Clear Search
+            </button>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4 flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search entries..."
+              className="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+              </div>
+            )}
+          </div>
+          <select
+            value={searchIn}
+            onChange={(e) => setSearchIn(e.target.value as 'both' | 'title' | 'content')}
+            className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700 bg-white"
+          >
+            <option value="both">Title & Content</option>
+            <option value="title">Title Only</option>
+            <option value="content">Content Only</option>
+          </select>
+        </div>
 
         {loading ? (
           <div className="text-center text-gray-500">Loading history...</div>
-        ) : history.length === 0 ? (
-          <div className="text-center text-gray-500">No saved entries yet</div>
+        ) : displayedEntries.length === 0 ? (
+          <div className="text-center text-gray-500">
+            {searchResults !== null ? 'No matching entries found' : 'No saved entries yet'}
+          </div>
         ) : (
           <div className="space-y-3">
-            {history.map((item) => (
+            {displayedEntries.map((item) => (
               <div
                 key={item.id}
                 className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1 mr-4">
-                    <p className="text-gray-700 line-clamp-2 mb-2">
+                    <h3 className="font-semibold text-gray-800 mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm line-clamp-2 mb-2">
                       {item.text.substring(0, 150)}
                       {item.text.length > 150 && '...'}
                     </p>
                     <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                      <span className="bg-gray-100 px-2 py-1 rounded">
+                      <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
                         {item.word_count} words
                       </span>
-                      <span className="bg-gray-100 px-2 py-1 rounded">
+                      <span className="bg-green-50 text-green-700 px-2 py-1 rounded">
                         {item.character_count} chars
                       </span>
                       <span className="bg-gray-100 px-2 py-1 rounded">

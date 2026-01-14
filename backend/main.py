@@ -68,10 +68,12 @@ def get_firestore_client():
 # Pydantic models
 class TextInput(BaseModel):
     text: str
+    title: Optional[str] = None
 
 
 class WordCountResult(BaseModel):
     id: str
+    title: str
     text: str
     word_count: int
     character_count: int
@@ -87,6 +89,11 @@ class WordCountStats(BaseModel):
     character_count_no_spaces: int
     sentence_count: int
     paragraph_count: int
+
+
+class SearchQuery(BaseModel):
+    query: str
+    search_in: str = "both"  # "title", "content", or "both"
 
 
 def count_words(text: str) -> WordCountStats:
@@ -137,6 +144,7 @@ async def health_check():
 async def create_word_count(input_data: TextInput):
     """Count words and save to Firestore."""
     text = input_data.text
+    title = input_data.title or f"Entry {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
 
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
@@ -151,6 +159,7 @@ async def create_word_count(input_data: TextInput):
     # Create result object
     result = WordCountResult(
         id=doc_id,
+        title=title,
         text=text,
         word_count=stats.word_count,
         character_count=stats.character_count,
@@ -192,6 +201,9 @@ async def get_history(limit: int = 20):
         results = []
         for doc in docs:
             data = doc.to_dict()
+            # Handle entries without title (backward compatibility)
+            if "title" not in data:
+                data["title"] = f"Entry {data.get('created_at', '')[:10]}"
             results.append(WordCountResult(**data))
 
         return results
@@ -214,7 +226,11 @@ async def get_word_count(doc_id: str):
         if not doc.exists:
             raise HTTPException(status_code=404, detail="Entry not found")
 
-        return WordCountResult(**doc.to_dict())
+        data = doc.to_dict()
+        # Handle entries without title (backward compatibility)
+        if "title" not in data:
+            data["title"] = f"Entry {data.get('created_at', '')[:10]}"
+        return WordCountResult(**data)
     except HTTPException:
         raise
     except Exception as e:
@@ -249,6 +265,56 @@ async def analyze_text(input_data: TextInput):
     """Analyze text without saving to database."""
     text = input_data.text
     return count_words(text)
+
+
+@app.get("/api/word-count/search", response_model=list[WordCountResult])
+async def search_entries(q: str, search_in: str = "both", limit: int = 50):
+    """Search word count entries by title or content."""
+    firestore_client = get_firestore_client()
+
+    if not firestore_client:
+        return []
+
+    if not q.strip():
+        return []
+
+    query_lower = q.lower().strip()
+
+    try:
+        # Firestore doesn't support full-text search natively,
+        # so we fetch recent entries and filter client-side
+        docs = (
+            firestore_client.collection("word_counts")
+            .order_by("created_at", direction="DESCENDING")
+            .limit(200)  # Fetch more to filter
+            .stream()
+        )
+
+        results = []
+        for doc in docs:
+            data = doc.to_dict()
+
+            # Handle entries without title (backward compatibility)
+            if "title" not in data:
+                data["title"] = f"Entry {data.get('created_at', '')[:10]}"
+
+            title_match = query_lower in data.get("title", "").lower()
+            content_match = query_lower in data.get("text", "").lower()
+
+            if search_in == "title" and title_match:
+                results.append(WordCountResult(**data))
+            elif search_in == "content" and content_match:
+                results.append(WordCountResult(**data))
+            elif search_in == "both" and (title_match or content_match):
+                results.append(WordCountResult(**data))
+
+            if len(results) >= limit:
+                break
+
+        return results
+    except Exception as e:
+        print(f"Search error: {e}")
+        return []
 
 
 if __name__ == "__main__":
